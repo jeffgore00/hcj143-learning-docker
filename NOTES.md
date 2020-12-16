@@ -122,3 +122,25 @@ Now you have a big long ID (after the :sha256:") of a new image. To give it a me
 docker tag 23jlk2345jh423lk423jlk32jkl3223 my-image
 ```
 ...or you can just run `docker commit [container ID] [new name]`. It'll still just print the ID of the new image, but it will also have that new name.
+
+- `docker images` will list all the images on your machine.
+
+## 2-3 Run processes in containers
+
+`docker run` starts a container by giving an image name and a process to run in that container. That process is the container's "main process", and when that main process stops, the container stops. (note that means that other processes can be started and stopped without causing the container to stop)
+
+`docker run -rm` is a common command; `-rm` will remove the container (rather than leaving it stopped) when its main process stops.
+
+This container is created from the ubuntu image. The main process is bash, and we give bash the command `-c` to execute. Sleep, then (`;`) print "all done"
+```
+docker run -ti ubuntu bash -c "sleep 3; echo all done"
+```
+
+`docker run -d` means run a container in the background ("detached" / `--detach`). It will just print the container ID.
+
+`docker attach [container name]` will let you jump into the terminal of that attached container. Technically, it "attach[es] [the container] to STDIN, STDOUT or STDERR".
+
+Ctrl + P followed by Ctrl + Q allows you to re-detach that container.
+
+`docker exec` starts another process in an existing container.
+
