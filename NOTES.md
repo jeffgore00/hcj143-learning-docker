@@ -899,11 +899,13 @@ What if, however, you didn't want to have to manually build and publish a new ve
 
 _What if you wanted Docker to compile the code as part of building the image?_
 
+This makes sense, especially if you want to publish a new docker image as a part of your standard release process. 
+
 Well, easy, you say. Just find a Docker image that has both the Java runtime and the Kotlin compiler, and then `RUN` the compilation before executing it.
 
 ```dockerfile
 # Doesn't exist, but easy to imagine
-FROM imageThatHasBothKotlinAndJava
+FROM imageThatHasBothKotlinCompilerAndJavaRuntime
 
 # Presumably, this Dockerfile is in the same dir as the main.kt Kotlin source code. So, copy that into the container.
 ADD main.kt ./main.kt
@@ -952,9 +954,12 @@ So, tips to not fall into this trap:
 
 Also, don't ever leave passwords in layers of your Dockerfile; delete them in the same step.
 
+# Ch 4. Under the Hood
+
 ## 4-1 Docker the program
 
 What do kernels do?
+
 - Responds to messages from the hardware
 - Start and schedule programs
 - Control and organize storage (filesystem)
@@ -965,7 +970,7 @@ Docker manages the kernel. It uses "cgroups" to contain processes. It uses "name
 
 These things were all in existence before Docker, including containerization.
 
-As mentioned earlier, Docker (meaning the Engine) is a client-server architecture. Two programs. 
+As mentioned earlier, Docker (meaning the Engine) is a client-server architecture. Two programs.
 
 Just because it's client-server doesn't mean its HTTP. In fact, http isn't even technically supported (it's really just `tcp`). They can communicate over other sockets as well, such as a Unix socket. Default is Unix for Mac, TCP for Windows. From Docker:
 
@@ -973,7 +978,7 @@ Just because it's client-server doesn't mean its HTTP. In fact, http isn't even 
 >
 > By default, a unix domain socket (or IPC socket) is created at `/var/run/docker.sock`, requiring either root permission, or docker group membership.
 
-Because this socket is addressable and out in the open, you can actually point to it from *within* a Docker container. That would mean to make any use of it, the container itself would also have to have a Docker client!
+Because this socket is addressable and out in the open, you can actually point to it from _within_ a Docker container. That would mean to make any use of it, the container itself would also have to have a Docker client!
 
 ## 4-2 Networking and namespaces
 
@@ -995,6 +1000,90 @@ Passing ports to Docker is just port forwarding at the networking/routing layer 
 
 ## 4-3 Processes and cgroups
 
+In Linux, processes come from other processes - a parent-child relationship. When a child process exits, it returns an exit code to its parent.
+
+The process that starts it all, process ID 1, is called `init` (or `launchd` on a Mac), which starts all the other processes (whether directly or indirectly).
+
+So, when your Docker container exits, that means that process ID 1 of that container is killed. The processes of the container are kept separate from the host machine using `cgroups`, which are control groups. Each container has its own `cgroup` on the host machine. Not only does this allow isolation, but also imposing memory/CPU limits on the container. The cgroup for the container must abide by the limits.
+
+> A control group (abbreviated as cgroup) is a collection of processes that are bound by the same criteria and associated with a set of parameters or limits.
+
+Note that even though container processes are isolated from the host and each other by default, the process of your container can share in the pool of other containers or even your host system, with the `--pid` flag.
+```
+--pid="host" <- The host's process IDs are shared
+--pid="container:name" <- Shared with another container
+```
+
+`docker inspect` allows you to see metadata about the container.
+
+Docker images are read only. When you instantiate a container from an image, it adds a "thin read/write layer" that allows you to make changes to it and commit to a new image.
+
+## 4-4 Storage
+
+Let's learn about Unix storage.
+
+From lowest to highest abstraction level:
+- Actual storage devices. The actual metal. The devices that the kernel manages.
+- Logical storage devices. For instance, in Windows C: and D: are logical storage devices, but the underlying device is the same.
+- Filesystems. Which bit on the drive maps to which file.
+
+Docker uses COWs. Copy On Write. This principle leads to the "layering" of images, just like an Adobe program. Or think of Git, with commits only being change instructions - per Docker, "Each layer is only a set of differences from the layer before it." When you download an image, it downloads all the layers separately, as gzip files, then reassembles them. And you can see this in action, with the multiple progress bars.
+
+The author does a poor job, IMO, of explaining Unix filesystem `mount` command. Evidently, this is how Docker volumes work - a host directory is mounted "on top of" a container directory. (And I guess that's how mounting works in general, you mount a horse by getting on top of it.)
+
+What mounting does is change the pointer of a directory.
+
+Say that `/puppies` already exists in your container.
+
+If you make it a volume connected to a host machine directory, then the interior of `/puppies` will mirror the interior of the host directory, pointing to different files. The original files are still there, just not being pointed to. If you unmount (`umount`), then the pointer is removed and the original files underneath become visible again.
+
+# Ch. 5 Orchestration: Building Systems With Docker
+
+## 5-1. Registries in Detail
+
+Supplying `--restart=always` to `docker run` means your container will automatically restart if it crashes.
+
+Docker Hub is built on Docker Registry, which is open source. Generally, if you run a Docker registry yourself, it runs on port :5000. Larger companies often have their own registries.
+
+How would you save your images to an actual file that you could back up or ship to customers?
+
+You can use `docker save`. 
+```
+docker save -o my-images.tar.gz jeff-url-builder:v1 jeff-node-countdown:v1
+```
+
+And then, when you're ready to use those saved images, you can use `docker load`.
+```
+docker load -i my-images.tar.gz
+```
+
+## 5-2 Intro to orchestration
+
+A Docker orchestration system:
+
+- Starts containers, and restarts them if they fail
+- Allows containers to find each other ("service discovery")
+- Matches containers to the machines best equipped to run them (resource allocation)
+
+The easiest orchestration system is Docker Compose. It's designed for a running multiple containers in a non-distributed system (i.e. 2 or more containers, but still only one host). It's good for testing and development.
+
+For larger systems, Kubernetes is a thing.
+- Containers run programs (like Docker)
+- Pods group containers together, running on the same system (like Docker Compose)
+- Services make pods available to others
+  
+With that in mind, there are many big player options for large-scale orchestration.
+
+One is Amazon EC2.
+- Task defintion: Define a set of containers that always run together
+- Task: runs the containers
+- Services expose tasks to the internet and ensure that they're always running, with redundant backups
+  
+There are more:
+- Amazon Fargate
+- Docker Swarm
+- Google Kubernetes Engine
+- Microsoft Azure Kubernetes Service
 
 
 ## SIDE NOTES
