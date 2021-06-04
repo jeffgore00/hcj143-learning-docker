@@ -899,7 +899,7 @@ What if, however, you didn't want to have to manually build and publish a new ve
 
 _What if you wanted Docker to compile the code as part of building the image?_
 
-This makes sense, especially if you want to publish a new docker image as a part of your standard release process. 
+This makes sense, especially if you want to publish a new docker image as a part of your standard release process.
 
 Well, easy, you say. Just find a Docker image that has both the Java runtime and the Kotlin compiler, and then `RUN` the compilation before executing it.
 
@@ -966,7 +966,20 @@ What do kernels do?
 - Pass messages between programs
 - Allocate resources, memory, CPU, network
 
-Docker manages the kernel. It uses "cgroups" to contain processes. It uses "namespaces" to contain networks. It uses "copy-on-write" filesystems to build images.
+Docker manages the kernel of the _host system_, that is, the one running Docker Engine, the one running `dockerd`. This means that on my machine, now, even though Docker Desktop is running some small virtualization to enable Linux containers, ultimately the kernel that is being used is still that of my machine. There is no Linux kernel in the Ubuntu distribution. The "Ubuntu" image is just the Ubuntu-specific applications and functionality that live _outside_ of the Linux kernel, i.e., in "userland".
+
+> The term userland (or user space) refers to all code that runs outside the operating system's kernel. Userland usually refers to the various programs and libraries that the operating system uses to interact with the kernel: software that performs input/output, manipulates file system objects, application software, etc.
+
+"Docker never uses a different kernel: the kernel is always your host kernel. If your host kernel is "compatible enough" with the software in the container you want to run it will work; otherwise it won't."
+https://stackoverflow.com/a/56606244/6188150
+
+That is why, on this new Apple M1, which uses an entirely different processor architecture, not all images are supported. Images rely on the host machine having some characteristics because it is the host machine's kernel that is ultimately utilized to allocate resources and enable containerization. Because the processor is different, then the kernel, the core OS software program which has a direct line to the processor, is presumably quite different.
+
+And this usage of the host kernel is why Docker is faster than a pure VM.
+
+Back to the course...
+
+Docker uses "cgroups" to contain processes. It uses "namespaces" to contain networks. It uses "copy-on-write" filesystems to build images.
 
 These things were all in existence before Docker, including containerization.
 
@@ -978,7 +991,7 @@ Just because it's client-server doesn't mean its HTTP. In fact, http isn't even 
 >
 > By default, a unix domain socket (or IPC socket) is created at `/var/run/docker.sock`, requiring either root permission, or docker group membership.
 
-Because this socket is addressable and out in the open, you can actually point to it from _within_ a Docker container. That would mean to make any use of it, the container itself would also have to have a Docker client!
+Because this socket is addressable, you can actually point to it from _within_ a Docker container. That would mean to make any use of it, the container itself would also have to have a Docker client!
 
 ## 4-2 Networking and namespaces
 
@@ -1009,9 +1022,10 @@ So, when your Docker container exits, that means that process ID 1 of that conta
 > A control group (abbreviated as cgroup) is a collection of processes that are bound by the same criteria and associated with a set of parameters or limits.
 
 Note that even though container processes are isolated from the host and each other by default, the process of your container can share in the pool of other containers or even your host system, with the `--pid` flag.
+
 ```
---pid="host" <- The host's process IDs are shared
---pid="container:name" <- Shared with another container
+--pid="host"               <- The host's process IDs are shared
+--pid="<container>:<name>" <- Process IDs are shared with another container
 ```
 
 `docker inspect` allows you to see metadata about the container.
@@ -1023,6 +1037,7 @@ Docker images are read only. When you instantiate a container from an image, it 
 Let's learn about Unix storage.
 
 From lowest to highest abstraction level:
+
 - Actual storage devices. The actual metal. The devices that the kernel manages.
 - Logical storage devices. For instance, in Windows C: and D: are logical storage devices, but the underlying device is the same.
 - Filesystems. Which bit on the drive maps to which file.
@@ -1047,13 +1062,15 @@ Docker Hub is built on Docker Registry, which is open source. Generally, if you 
 
 How would you save your images to an actual file that you could back up or ship to customers?
 
-You can use `docker save`. 
-```
+You can use `docker save`.
+
+```bash
 docker save -o my-images.tar.gz jeff-url-builder:v1 jeff-node-countdown:v1
 ```
 
 And then, when you're ready to use those saved images, you can use `docker load`.
-```
+
+```bash
 docker load -i my-images.tar.gz
 ```
 
@@ -1068,30 +1085,30 @@ A Docker orchestration system:
 The easiest orchestration system is Docker Compose. It's designed for a running multiple containers in a non-distributed system (i.e. 2 or more containers, but still only one host). It's good for testing and development.
 
 For larger systems, Kubernetes is a thing.
+
 - Containers run programs (like Docker)
 - Pods group containers together, running on the same system (like Docker Compose)
 - Services make pods available to others
-  
+
 With that in mind, there are many big player options for large-scale orchestration.
 
 One is Amazon EC2.
+
 - Task defintion: Define a set of containers that always run together
 - Task: runs the containers
 - Services expose tasks to the internet and ensure that they're always running, with redundant backups
-  
+
 There are more:
+
 - Amazon Fargate
 - Docker Swarm
 - Google Kubernetes Engine
 - Microsoft Azure Kubernetes Service
 
-
 ## SIDE NOTES
 
 Interesting note: "To put it simply, a container is a virtual machine without a Kernel. Instead, it is using the Kernel of a host operating system."
 https://www.freecodecamp.org/news/comprehensive-introductory-guide-to-docker-vms-and-containers-4e42a13ee103/
-
-## Kotlin dockerfile
 
 ## Footnotes / Things to Dig into \*\*
 
