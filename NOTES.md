@@ -1,10 +1,45 @@
-# Learning Docker
+# Docker Notes
 
-Platform: LinkedIn Learning (formerly Lynda)
-Instructor: Arthur Ulfeldt
-URL: https://www.linkedin.com/learning/learning-docker-2018
+## Base Course
+Title: Learning Docker  
+Platform: LinkedIn Learning (formerly Lynda)  
+Instructor: Arthur Ulfeldt  
+URL: https://www.linkedin.com/learning/learning-docker-2018/
 
-# Introduction (with heavy additions from my research)
+
+## Table of Contents
+- [Introduction (with heavy additions from my research)](#introduction-with-heavy-additions-from-my-research)
+- [1. Installing Docker](#1-installing-docker)
+  - [1-1 Setting up Docker](#1-1-setting-up-docker)
+  - [1-2 Docker Desktop](#1-2-docker-desktop)
+  - [1-3 Install Docker on Mac](#1-3-install-docker-on-mac)
+- [2. Using Docker](#2-using-docker)
+  - [2-1 The Docker flow: Images to containers](#2-1-the-docker-flow-images-to-containers)
+  - [2-2 The Docker flow: containers to images.](#2-2-the-docker-flow-containers-to-images)
+  - [2-3 Run processes in containers](#2-3-run-processes-in-containers)
+  - [2-4 Manage containers](#2-4-manage-containers)
+  - [2-5 Exposing ports (connecting container to host)](#2-5-exposing-ports-connecting-container-to-host)
+  - [2-6 Connecting Directly Between Containers](#2-6-connecting-directly-between-containers)
+  - [2-7 Legacy linking](#2-7-legacy-linking)
+  - [2-8 Listing Images](#2-8-listing-images)
+  - [2-9 Volumes](#2-9-volumes)
+  - [2-10 Docker Registries](#2-10-docker-registries)
+- [3. Building Docker images](#3-building-docker-images)
+  - [3-1. What are Dockerfiles?](#3-1-what-are-dockerfiles)
+  - [3-2 Buliding Dockerfiles](#3-2-buliding-dockerfiles)
+  - [3-3 Dockerfile syntax](#3-3-dockerfile-syntax)
+  - [3-4 Multistage builds](#3-4-multistage-builds)
+  - [3-5 Avoid Golden Images (General Tips)](#3-5-avoid-golden-images-general-tips)
+- [4. Under the Hood](#4-under-the-hood)
+  - [4-1 Docker the program](#4-1-docker-the-program)
+  - [4-2 Networking and namespaces](#4-2-networking-and-namespaces)
+  - [4-3 Processes and cgroups](#4-3-processes-and-cgroups)
+  - [4-4 Storage](#4-4-storage)
+- [5. Orchestration: Building Systems With Docker](#5-orchestration-building-systems-with-docker)
+  - [5-1. Registries in Detail](#5-1-registries-in-detail)
+  - [5-2 Intro to orchestration](#5-2-intro-to-orchestration)
+
+## Introduction (with heavy additions from my research)
 
 Docker partitions a running Linux [or Windows] system into containers. A container is a self-contained sealed unit of software that has everything it needs to run, including the OS (just enough of it to run your code) and networking.
 
@@ -21,7 +56,7 @@ Docker differs from virtual machines in that there is only one OS running [eithe
 >
 > Why, then, can Macs like mine run Docker?
 >
-> That's where Docker Desktop comes in. **Docker Desktop sets up a Linux virtual machine in order to run Linux containers.** So just wanted to hammer this point home - just because Docker is a different concept from a VM, doesn't mean a VM isn't necessary. To run Docker on your Mac, you _need_ a Linux VM, and Docker Desktop handles this for you. (Likewise, Docker Desktop for Windows sets up a Linux VM so that you can run Linux containers.)
+> That's where Docker Desktop comes in. **Docker Desktop sets up a Linux virtual machine in order to run Linux containers.** So just wanted to hammer this point home - just because Docker is a different concept from a VM, doesn't mean some virtualizations isn't necessary. To run Docker on your Mac, you _need_ some virtualization of the Linux OS family, and Docker Desktop handles this for you. (Likewise, Docker Desktop for Windows sets up a Linux VM so that you can run Linux containers.)
 >
 > - "native macOS virtualization running a custom minimal Linux distro"
 >   https://hub.docker.com/editions/community/docker-ce-desktop-mac
@@ -79,9 +114,9 @@ These first two bullets, the client-server program, comprises the "Docker Engine
 > - APIs which specify interfaces that programs can use to talk to and instruct the Docker daemon.
 > - A command line interface (CLI) client `docker`.
 
-# 1. Installing Docker
+## 1. Installing Docker
 
-## 1-1 Setting up Docker
+### 1-1 Setting up Docker
 
 "Docker's primary job is to manage a Linux server and start and stop your containers on it as required...most of us don't work on laptops running Linux all the time so many people use a virtual machine, running on their laptop to act as the Linux server and run the server side of Docker."
 
@@ -123,19 +158,19 @@ To generate this message, Docker took the following steps:
 
 In the example above, step 2 happened because we didn't have the image locally. What's an image? A "read-only template with instructions for creating a Docker container." And it came from a Docker registry, namely Docker Hub, the main public registry similar to what npm is for Node modules.
 
-## 1-2 Docker Desktop
+### 1-2 Docker Desktop
 
 "boot2docker" is the name a very old Docker CLI.
 
-## 1-3 Install Docker on Mac
+### 1-3 Install Docker on Mac
 
 It's worth signing up for a Docker ID, it's what you'll use both for "for publishing images to the world and accessing private images."
 
 The "Restart" button in Docker Desktop will restart the Docker VM and fixes most problems. In extreme cases, quit and open again.
 
-# 2. Using Docker
+## 2. Using Docker
 
-## 2-1 The Docker flow: Images to containers
+### 2-1 The Docker flow: Images to containers
 
 "An image is every file that makes up just enough of the operating system to do what you need to do."
 
@@ -166,7 +201,7 @@ Example of how containers are isolated and are instances of images:
 3. Run another container from the same exact image in a different terminal
 4. Note that the file isn't in the second container.
 
-## 2-2 The Docker flow: containers to images.
+### 2-2 The Docker flow: containers to images.
 
 A container can be either _running_ or _stopped_. The latter happens when the desired process (?) exits. (Can it only run one `COMMAND`?)
 
@@ -192,11 +227,11 @@ docker tag 23jlk2345jh423lk423jlk32jkl3223 my-image
 
 ...or you can just run `docker commit [container ID] [new name]`. It'll still just print the ID of the new image, but it will also have that new name.
 
-"All Docker containers have names; if you choose not to name your container, Docker will name the container for you." See the `--name` flag later on.
+"All Docker containers have names; if you choose not to name your container, Docker will name the container for you." Pass the `--name` flag to `docker run` to name your container. Remember that a name must be unique amongst your existing containers. An ID is also unique, but it is historically unique, meaning no container that has ever existed is likely to have had that ID (good for logging).
 
 - `docker images` will list all the images on your machine.
 
-## 2-3 Run processes in containers
+### 2-3 Run processes in containers
 
 "The `docker run` command converts an image to a living, running container, with a process in it that is doing something."
 
@@ -226,7 +261,7 @@ docker exec -ti soft_baby bash
 
 Will start a new `bash` process in the already running "soft_baby" container. This is good for debugging a container in which the main process is malfunctioning.
 
-## 2-4 Manage containers
+### 2-4 Manage containers
 
 Docker keeps the output of the container around as long as the container exists. `docker logs [container name or id]` allows you to see the output. In the case of the `bash` process running as the primary container process, it allows you to see all the commands executed and their outputs, like a read-only shell.
 
@@ -261,7 +296,7 @@ Image contains `npm ci` command -> creates container with dependencies preloaded
 BAD:
 Image contains only the app -> creates container -> container executes `npm ci` on start
 
-## 2-5 Exposing ports (connecting container to host)
+### 2-5 Exposing ports (connecting container to host)
 
 Programs in containers are isolated from the internet by default.
 
@@ -354,7 +389,7 @@ Generally, the protocol can be supplied at the end like the above.
 
 (Likewise, `nc -l` defaults to listening on a TCP port. To listen on a UDP port, you'd do `nc -ul`. Supposedly, TCP is more reliable.)
 
-## 2-6 Connecting Directly Between Containers
+### 2-6 Connecting Directly Between Containers
 
 Given what we've learned above, we _could_ infer that communicating between containers could be done via the host machine.
 
@@ -448,7 +483,7 @@ docker network connect containerA learningNetwork
 
 A container can be connected to more than one Docker network.
 
-## 2-7 Legacy linking
+### 2-7 Legacy linking
 
 Side note: you can start a container with given env vars using the `-e` flag.
 
@@ -460,7 +495,7 @@ I skipped this video after halfway through. It was alraedy "legacy" when this co
 
 > The --link flag is a legacy feature of Docker. It may eventually be removed. Unless you absolutely need to continue using it, we recommend that you use user-defined networks to facilitate communication between two containers instead of using --link. One feature that user-defined networks do not support that you can do with --link is sharing environment variables between containers. However, you can use other mechanisms such as volumes to share environment variables between containers in a more controlled way.
 
-## 2-8 Listing Images
+### 2-8 Listing Images
 
 `docker images` lists the images you've downloaded.
 
@@ -538,7 +573,7 @@ Therefore if I were to publish an image named `robot-builder`, the image name / 
 
 > Note: Docker's public registry is located at `registry-1.docker.io`.
 
-## 2-9 Volumes
+### 2-9 Volumes
 
 Volumes allow you to share data between containers or between a container and the host. The are virtual "discs".
 
@@ -599,7 +634,7 @@ What's interesting is that there is nothing particularly special about the initi
 
 The volumes only disappear when all containers pointing to it are stopped are removed (note you can stop the containers and the shared volume will still be there).
 
-## 2-10 Docker Registries
+### 2-10 Docker Registries
 
 Images are hosted in registries. Registries manage and distribute images.
 
@@ -611,9 +646,9 @@ docker search webdriver
 
 To push and pull images from Docker Hub, you have to `docker login` first.
 
-# 3. Building Docker images
+## 3. Building Docker images
 
-## 3-1. What are Dockerfiles?
+### 3-1 What are Dockerfiles?
 
 Dockerfiles are the way you "build images with code". The are instructions on how to create an image. The command that reads those instructions is `docker build`.
 
@@ -633,7 +668,7 @@ Processes you start on one line will not be running on the next line. Therefore 
 
 Environment variables will be available to subsequent lines, though.
 
-## 3-2 Buliding Dockerfiles
+### 3-2 Buliding Dockerfiles
 
 A Dockerfile must begin with a `FROM` instruction. `FROM` specifies the "parent image" to use as a base.
 
@@ -795,7 +830,7 @@ ENV COUNT_UP_TO=100000
 
 Now, let's say you wanted to access/print the value of an environment variable, i.e. `$HOME`. In this case, you would need the shell to do the variable substitution. That is part of normal "shell processing".
 
-## 3-3 Dockerfile syntax
+### 3-3 Dockerfile syntax
 
 LABEL is like the HTML <meta> field - a place for metadata. It is provided in `key="value"` format. For example:
 
@@ -882,7 +917,7 @@ The `USER` command lets you start the container as a specific user.
 
 "By default, containers run as root. A container running as root has full control of the host system...The default user in a Dockerfile is the user of the parent image."
 
-## 3-4 Multistage builds
+### 3-4 Multistage builds
 
 Let's take this example simple CLI tool:
 
@@ -940,7 +975,7 @@ ENTRYPOINT [ "java", "-jar", "url-builder.jar" ]
 
 Now, our image only includes the `openjdk` image plus our own addition of the compiled Kotlin app.
 
-## 3-5 Avoid Golden Images (General Tips)
+### 3-5 Avoid Golden Images (General Tips)
 
 A "golden image", according to the author, is a locally-modified revision of a canonical build. To give that some more meaning, think of this sordid scenario: you are the producer of an npm module. You went through the proper steps to version the module, but after you publish, you discover an error. Instead of being responsible and publishing a new patched version, which takes some tedious work, you simply make the local modifications necessary to the code, rebuild, and republish the fixed file under the same exact name and version, as if nothing ever happened.
 
@@ -954,9 +989,9 @@ So, tips to not fall into this trap:
 
 Also, don't ever leave passwords in layers of your Dockerfile; delete them in the same step.
 
-# Ch 4. Under the Hood
+## 4. Under the Hood
 
-## 4-1 Docker the program
+### 4-1 Docker the program
 
 What do kernels do?
 
@@ -993,7 +1028,7 @@ Just because it's client-server doesn't mean its HTTP. In fact, http isn't even 
 
 Because this socket is addressable, you can actually point to it from _within_ a Docker container. That would mean to make any use of it, the container itself would also have to have a Docker client!
 
-## 4-2 Networking and namespaces
+### 4-2 Networking and namespaces
 
 Networking is comprised of many layers. Fact-check the below!
 
@@ -1011,7 +1046,7 @@ Passing `--privileged=true` to `docker run` gives the container full control of 
 
 Passing ports to Docker is just port forwarding at the networking/routing layer within your system.
 
-## 4-3 Processes and cgroups
+### 4-3 Processes and cgroups
 
 In Linux, processes come from other processes - a parent-child relationship. When a child process exits, it returns an exit code to its parent.
 
@@ -1032,7 +1067,7 @@ Note that even though container processes are isolated from the host and each ot
 
 Docker images are read only. When you instantiate a container from an image, it adds a "thin read/write layer" that allows you to make changes to it and commit to a new image.
 
-## 4-4 Storage
+### 4-4 Storage
 
 Let's learn about Unix storage.
 
@@ -1052,9 +1087,9 @@ Say that `/puppies` already exists in your container.
 
 If you make it a volume connected to a host machine directory, then the interior of `/puppies` will mirror the interior of the host directory, pointing to different files. The original files are still there, just not being pointed to. If you unmount (`umount`), then the pointer is removed and the original files underneath become visible again.
 
-# Ch. 5 Orchestration: Building Systems With Docker
+## 5. Orchestration: Building Systems With Docker
 
-## 5-1. Registries in Detail
+### 5-1 Registries in Detail
 
 Supplying `--restart=always` to `docker run` means your container will automatically restart if it crashes.
 
@@ -1074,7 +1109,7 @@ And then, when you're ready to use those saved images, you can use `docker load`
 docker load -i my-images.tar.gz
 ```
 
-## 5-2 Intro to orchestration
+### 5-2 Intro to orchestration
 
 A Docker orchestration system:
 
@@ -1104,14 +1139,3 @@ There are more:
 - Docker Swarm
 - Google Kubernetes Engine
 - Microsoft Azure Kubernetes Service
-
-## SIDE NOTES
-
-Interesting note: "To put it simply, a container is a virtual machine without a Kernel. Instead, it is using the Kernel of a host operating system."
-https://www.freecodecamp.org/news/comprehensive-introductory-guide-to-docker-vms-and-containers-4e42a13ee103/
-
-## Footnotes / Things to Dig into \*\*
-
-How to name your container rather than letting Docker name it for you: `docker run --name`
-
-Name must be unique amongst existing containers, ID is unique all time
