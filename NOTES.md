@@ -361,6 +361,11 @@ $ docker run -p 1234:1234 -ti ubuntu bash
 # bash: cool, nice job
 ```
 
+Multiple ports are supplied with multiple `-p` flags:
+```bash
+$ docker run -p 1337:1337 -p 8080:8080 -ti ubuntu bash
+```
+
 What if you want Docker to _choose_ the port on your host? For instance, you may just want it to pick whatever unused port is available. This is good for many containers running simultaneously with their own fixed ports internally. For instance, let's say there are two containers that both run on port 3000 internally. They cannot both bind to the single 3000 port on your machine.
 
 Note only the left side of the port assignment is supplied here - the internal port.
@@ -469,9 +474,9 @@ X is variable depending on the the network. The default `bridge` network is `172
 
 Then, when you add containers to that network, they increment that final version. In the `learningNetwork` network:
 
-Gateway: `172.18.0.1`
-containerA: `172.18.0.2`
-containerB: `172.18.0.3`
+- Gateway: `172.18.0.1`
+- containerA: `172.18.0.2`
+- containerB: `172.18.0.3`
 
 Note also that you could use `ping containerA` rather than `ping 172.18.0.2`. That's because Docker, in a _user-defined network_ like our own brand new `learningNetwork` network, automatically maps the container name to a DNS name in the associated network.
 
